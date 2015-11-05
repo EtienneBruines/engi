@@ -1,5 +1,11 @@
 package engi
 
+import (
+	"runtime"
+	"sync"
+	"sync/atomic"
+)
+
 type Systemer interface {
 	Update(entity *Entity, dt float32)
 	Type() string
@@ -117,6 +123,8 @@ type RenderSystem struct {
 	renders map[PriorityLevel][]*Entity
 	changed bool
 	*System
+
+	rendersMu sync.Mutex
 }
 
 func (rs *RenderSystem) New() {
@@ -135,7 +143,9 @@ func (rs RenderSystem) Pre() {
 		return
 	}
 
+	rs.rendersMu.Lock()
 	rs.renders = make(map[PriorityLevel][]*Entity)
+	rs.rendersMu.Unlock()
 }
 
 type Renderable interface {
@@ -143,38 +153,82 @@ type Renderable interface {
 }
 
 func (rs *RenderSystem) Post() {
-	var currentBatch *Batch
+	var currentBatch, newBatch *Batch
 
+	rs.rendersMu.Lock()
 	for i := Background; i <= HighestGround; i++ {
 		if len(rs.renders[i]) == 0 {
 			continue
 		}
 
 		// Retrieve a batch, may be the default one -- then call .Begin() if we arent already using it
-		batch := Wo.Batch(i)
-		if batch != currentBatch {
+		newBatch = Wo.Batch(i)
+		if newBatch != currentBatch {
 			if currentBatch != nil {
 				currentBatch.End()
 			}
-			batch.Begin()
-			currentBatch = batch
+			currentBatch = newBatch
+			currentBatch.Begin()
 		}
-		// Then render everything for this level
-		for _, entity := range rs.renders[i] {
+
+		// Render everything for this level
+
+		// It may not always make sense to MT
+		if len(rs.renders[i]) < 2*runtime.NumCPU() {
 			var render *RenderComponent
 			var space *SpaceComponent
 
-			if !entity.GetComponent(&render) || !entity.GetComponent(&space) {
-				return
+			for _, entity := range rs.renders[i] {
+				if !entity.GetComponent(&render) || !entity.GetComponent(&space) {
+					return
+				}
+				render.Display.Render(currentBatch, render, space)
 			}
-
-			render.Display.Render(batch, render, space)
+			continue // with other RenderLevels
 		}
+
+		wg := sync.WaitGroup{}
+
+		// Create a channel to feed the workers
+		entityChannel := make(chan int, len(rs.renders[i]))
+
+		batchSize := int64(1 + (len(rs.renders[i]) / 10000))
+		index := -batchSize
+		maxIndex := int64(len(rs.renders[i]))
+
+		wg.Add(len(rs.renders[i]))
+
+		// Start some workers
+		for w := 0; w < 4; w++ {
+			go func() {
+				var entity *Entity
+				var render *RenderComponent
+				var space *SpaceComponent
+				var batchIndex int64
+				var nextIndex int64
+
+				for nextIndex = atomic.AddInt64(&index, batchSize); nextIndex < maxIndex; nextIndex = atomic.AddInt64(&index, batchSize) {
+					for batchIndex = 0; batchIndex < batchSize && nextIndex+batchIndex < maxIndex; batchIndex++ {
+						entity = rs.renders[i][nextIndex+batchIndex]
+						if !entity.GetComponent(&render) || !entity.GetComponent(&space) {
+							continue
+						}
+						render.Display.Render(currentBatch, render, space)
+					}
+					wg.Add(-int(batchIndex))
+				}
+			}()
+		}
+
+		wg.Wait()
+		close(entityChannel)
 	}
 
 	if currentBatch != nil {
 		currentBatch.End()
 	}
+
+	rs.rendersMu.Unlock()
 
 	rs.changed = false
 }
@@ -189,7 +243,9 @@ func (rs *RenderSystem) Update(entity *Entity, dt float32) {
 		return
 	}
 
+	rs.rendersMu.Lock()
 	rs.renders[render.Priority] = append(rs.renders[render.Priority], entity)
+	rs.rendersMu.Unlock()
 }
 
 func (*RenderSystem) Type() string {

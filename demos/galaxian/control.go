@@ -23,7 +23,7 @@ func (c *ControlSystem) New() {
 func (c *ControlSystem) Update(entity *engi.Entity, dt float32) {
 	left := engi.Keys.KEY_LEFT.Down()
 	right := engi.Keys.KEY_RIGHT.Down()
-	fire := engi.Keys.KEY_SPACE.JustReleased()
+	fire := engi.Keys.KEY_SPACE.JustReleased() || engi.Keys.KEY_SPACE.Down()
 
 	if left {
 		c.moveLeft(entity, dt)
@@ -65,12 +65,18 @@ func (c *ControlSystem) moveRight(ship *engi.Entity, dt float32) {
 	}
 }
 
+var counter = 0
+
 func (c *ControlSystem) fire(ship *engi.Entity) {
 	var space *engi.SpaceComponent
 
 	if !ship.GetComponent(&space) {
 		return
 	}
+
+	//fmt.Println(counter, len(game.World.Entities()))
+
+	counter++
 
 	bulletPoint := engi.Point{space.Position.X + 7*scale.X, space.Position.Y - 1*scale.Y}
 	bullet := engi.NewEntity([]string{"RenderSystem", "SpeedSystem", "BulletSystem"})

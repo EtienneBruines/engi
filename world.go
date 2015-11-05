@@ -15,6 +15,8 @@ type World struct {
 
 	isSetup bool
 	paused  bool
+
+	entitiesMu sync.RWMutex
 }
 
 func (w *World) New() {
@@ -49,20 +51,25 @@ func (w *World) AddEntity(entity *Entity) {
 }
 
 func (w *World) RemoveEntity(entity *Entity) {
+	w.entitiesMu.Lock()
 	delete(w.entities, entity.ID())
+	w.entitiesMu.Unlock()
 }
 
 func (w *World) AddSystem(system Systemer) {
 	system.New()
+	w.entitiesMu.Lock()
 	w.systems = append(w.systems, system)
+	w.entitiesMu.Unlock()
 }
 
 func (w *World) Entities() []*Entity {
 	entities := make([]*Entity, len(w.entities))
+	w.entitiesMu.RLock()
 	for _, v := range w.entities {
 		entities = append(entities, v)
 	}
-
+	w.entitiesMu.RUnlock()
 	return entities
 }
 
@@ -93,7 +100,7 @@ func (w *World) Update(dt float32) {
 		entities := system.Entities()
 
 		// It's not always faster to multithread; so in this case we're not going to
-		if len(entities) < 200*runtime.NumCPU() {
+		if len(entities) < 2*runtime.NumCPU() {
 			for _, ent := range entities {
 				system.Update(ent, dt)
 			}

@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/paked/engi"
 	"log"
+	"os"
+	"runtime/pprof"
 )
 
 type GalaxianGame struct {
@@ -53,6 +55,19 @@ func (galaxianGame *GalaxianGame) Setup() {
 	game = galaxianGame
 }
 
+const (
+	cpuprofile = "/tmp/cpu.out"
+)
+
 func main() {
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	engi.Open("GalaxianGame", 1024, 768, false, &GalaxianGame{})
 }

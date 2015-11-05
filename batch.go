@@ -7,6 +7,7 @@ package engi
 import (
 	"log"
 	"math"
+	"sync"
 
 	"github.com/paked/webgl"
 )
@@ -36,6 +37,8 @@ type Batch struct {
 	center       *webgl.UniformLocation
 	projX        float32
 	projY        float32
+
+	drawMu sync.Mutex
 }
 
 func NewBatch(width, height float32, vertSrc, fragSrc string) *Batch {
@@ -99,19 +102,17 @@ func (b *Batch) End() {
 		log.Fatal("Batch.Begin() must be called first")
 	}
 	if b.index > 0 {
+		b.drawMu.Lock()
 		b.flush()
+		b.drawMu.Unlock()
 	}
 	b.drawing = false
-
-	b.lastTexture = nil
 }
 
 func (b *Batch) flush() {
-	if b.lastTexture == nil {
+	if len(b.vertices) == 0 {
 		return
 	}
-
-	Gl.BindTexture(Gl.TEXTURE_2D, b.lastTexture)
 
 	Gl.Uniform2f(b.ufProjection, b.projX, b.projY)
 	Gl.Uniform3f(b.center, cam.x/Width(), cam.y/Height(), cam.z)
@@ -130,13 +131,6 @@ func (b *Batch) SetProjection(width, height, depth float32) {
 func (b *Batch) Draw(r Drawable, x, y, originX, originY, scaleX, scaleY, rotation float32, color uint32, transparency float32) {
 	if !b.drawing {
 		log.Fatal("Batch.Begin() must be called first")
-	}
-
-	if r.Texture() != b.lastTexture {
-		if b.lastTexture != nil {
-			b.flush()
-		}
-		b.lastTexture = r.Texture()
 	}
 
 	x -= originX * r.Width()
@@ -223,9 +217,14 @@ func (b *Batch) Draw(r Drawable, x, y, originX, originY, scaleX, scaleY, rotatio
 	alpha := uint32(transparency*255.0) << 24
 	tint := math.Float32frombits((alpha | blue | green | red) & 0xfeffffff)
 
-	idx := b.index * 20
-
 	u, v, u2, v2 := r.View()
+
+	// From this point on, we can't be thread-safe - so we use a Mutex, to ensure it is
+
+	b.drawMu.Lock()
+	defer b.drawMu.Unlock()
+
+	idx := b.index * 20
 
 	b.vertices[idx+0] = x1
 	b.vertices[idx+1] = y1

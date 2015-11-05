@@ -19,7 +19,7 @@ var (
 	Wo          Responder
 	WorldBounds AABB
 
-	fpsLimit        = 120
+	fpsLimit        = 120 // note that this is usually capped at monitor refresh rate, actual FPS will be lower
 	headless        bool
 	resetLoopTicker = make(chan bool, 1)
 )

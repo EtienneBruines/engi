@@ -1,5 +1,10 @@
 package engi
 
+import (
+	"runtime"
+	"sync"
+)
+
 type World struct {
 	Game
 	entities map[string]*Entity
@@ -84,7 +89,33 @@ func (w *World) Update(dt float32) {
 		}
 
 		system.Pre()
-		for _, entity := range system.Entities() {
+
+		entities := system.Entities()
+
+		// It's not always faster to multithread; so in this case we're not going to
+		if len(entities) < 200*runtime.NumCPU() {
+			for _, ent := range entities {
+				system.Update(ent, dt)
+			}
+			system.Post()
+			continue // with other Systems
+		}
+
+		entityChannel := make(chan *Entity)
+		wg := sync.WaitGroup{}
+
+		// Launch workers
+		for i := 0; i < runtime.NumCPU(); i++ {
+			go func() {
+				for ent := range entityChannel {
+					system.Update(ent, dt)
+					wg.Done()
+				}
+			}()
+		}
+
+		// Give them something to do
+		for _, entity := range entities {
 			if w.paused {
 				ok := entity.GetComponent(&unp)
 				if !ok {
@@ -92,9 +123,15 @@ func (w *World) Update(dt float32) {
 				}
 			}
 			if entity.Exists {
-				system.Update(entity, dt)
+				wg.Add(1)
+				entityChannel <- entity
 			}
 		}
+
+		// Wait until they're done, before continuing to other Systems
+		wg.Wait()
+		close(entityChannel)
+
 		system.Post()
 	}
 

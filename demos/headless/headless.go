@@ -87,7 +87,7 @@ func (ms *SpeedSystem) New() {
 		if isCollision {
 			var speed *SpeedComponent
 			var ok bool
-			if speed, ok = collision.Entity.ComponentFast("*SpeedComponent").(*SpeedComponent); !ok {
+			if speed, ok = collision.Entity.ComponentFast("*main.SpeedComponent").(*SpeedComponent); !ok {
 				return
 			}
 
@@ -105,7 +105,8 @@ func (ms *SpeedSystem) Update(entity *engi.Entity, dt float32) {
 	var space *engi.SpaceComponent
 	var ok bool
 
-	if speed, ok = entity.ComponentFast("*SpeedComponent").(*SpeedComponent); !ok {
+	if speed, ok = entity.ComponentFast("*main.SpeedComponent").(*SpeedComponent); !ok {
+		fmt.Println("NOT OK", entity.Pattern)
 		return
 	}
 	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {
@@ -146,7 +147,7 @@ func (bs *BallSystem) Update(entity *engi.Entity, dt float32) {
 	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {
 		return
 	}
-	if speed, ok = entity.ComponentFast("*SpeedComponent").(*SpeedComponent); !ok {
+	if speed, ok = entity.ComponentFast("*main.SpeedComponent").(*SpeedComponent); !ok {
 		return
 	}
 
@@ -197,7 +198,7 @@ func (c *ControlSystem) Update(entity *engi.Entity, dt float32) {
 	var space *engi.SpaceComponent
 	var ok bool
 
-	if control, ok = entity.ComponentFast("*ControlComponent").(*ControlComponent); !ok {
+	if control, ok = entity.ComponentFast("*main.ControlComponent").(*ControlComponent); !ok {
 		return
 	}
 	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {

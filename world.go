@@ -79,8 +79,6 @@ func (w *World) post() {}
 func (w *World) update(dt float32) {
 	w.pre()
 
-	var unp *UnpauseComponent
-
 	for _, system := range w.Systems() {
 		if headless && system.SkipOnHeadless() {
 			continue // so skip it
@@ -89,8 +87,7 @@ func (w *World) update(dt float32) {
 		system.Pre()
 		for _, entity := range system.Entities() {
 			if w.paused {
-				ok := entity.GetComponent(&unp)
-				if !ok {
+				if _, ok := entity.ComponentFast("*engi.UnpauseComponent").(*UnpauseComponent); !ok {
 					continue // so skip it
 				}
 			}

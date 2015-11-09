@@ -47,6 +47,12 @@ func (e *Entity) GetComponent(x interface{}) bool {
 	return true
 }
 
+// ComponentFast returns the same object as GetComponent
+// but without using reflect (and thus faster)
+func (e *Entity) ComponentFast(t string) interface{} {
+	return e.components[t]
+}
+
 func (e *Entity) ID() string {
 	return e.id
 }

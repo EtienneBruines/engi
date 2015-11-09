@@ -141,9 +141,13 @@ func (a *AnimationSystem) Update(e *Entity, dt float32) {
 	var (
 		ac *AnimationComponent
 		r  *RenderComponent
+		ok bool
 	)
 
-	if !e.GetComponent(&ac) || !e.GetComponent(&r) {
+	if ac, ok = e.ComponentFast("*engi.AnimationComponent").(*AnimationComponent); !ok {
+		return
+	}
+	if r, ok = e.ComponentFast("*engi.RenderComponent").(*RenderComponent); !ok {
 		return
 	}
 

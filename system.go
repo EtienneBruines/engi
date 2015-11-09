@@ -74,13 +74,19 @@ func (cs *CollisionSystem) New() {
 }
 
 func (cs *CollisionSystem) Update(entity *Entity, dt float32) {
-	var space *SpaceComponent
-	var collisionComponent *CollisionComponent
-	if !entity.GetComponent(&space) || !entity.GetComponent(&collisionComponent) {
+	var (
+		space     *SpaceComponent
+		collision *CollisionComponent
+		ok        bool
+	)
+	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*SpaceComponent); !ok {
+		return
+	}
+	if collision, ok = entity.ComponentFast("*engi.CollisionComponent").(*CollisionComponent); !ok {
 		return
 	}
 
-	if !collisionComponent.Main {
+	if !collision.Main {
 		return
 	}
 
@@ -89,12 +95,15 @@ func (cs *CollisionSystem) Update(entity *Entity, dt float32) {
 
 	for _, other := range cs.Entities() {
 		if other.ID() != entity.ID() {
-			if !other.GetComponent(&otherSpace) || !other.GetComponent(&otherCollision) {
-				return
+			if otherSpace, ok = other.ComponentFast("*engi.SpaceComponent").(*SpaceComponent); !ok {
+				continue // with other entities
+			}
+			if otherCollision, ok = other.ComponentFast("*engi.CollisionComponent").(*CollisionComponent); !ok {
+				continue // with other entities
 			}
 
 			entityAABB := space.AABB()
-			offset := Point{collisionComponent.Extra.X / 2, collisionComponent.Extra.Y / 2}
+			offset := Point{collision.Extra.X / 2, collision.Extra.Y / 2}
 			entityAABB.Min.X -= offset.X
 			entityAABB.Min.Y -= offset.Y
 			entityAABB.Max.X += offset.X
@@ -106,7 +115,7 @@ func (cs *CollisionSystem) Update(entity *Entity, dt float32) {
 			otherAABB.Max.X += offset.X
 			otherAABB.Max.Y += offset.Y
 			if IsIntersecting(entityAABB, otherAABB) {
-				if otherCollision.Solid && collisionComponent.Solid {
+				if otherCollision.Solid && collision.Solid {
 					mtd := MinimumTranslation(entityAABB, otherAABB)
 					space.Position.X += mtd.X
 					space.Position.Y += mtd.Y
@@ -209,10 +218,16 @@ func (rs *RenderSystem) Post() {
 		}
 		// Then render everything for this level
 		for _, entity := range rs.renders[i] {
-			var render *RenderComponent
-			var space *SpaceComponent
+			var (
+				render *RenderComponent
+				space  *SpaceComponent
+				ok     bool
+			)
 
-			if !entity.GetComponent(&render) || !entity.GetComponent(&space) {
+			if render, ok = entity.ComponentFast("*engi.RenderComponent").(*RenderComponent); !ok {
+				continue
+			}
+			if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*SpaceComponent); !ok {
 				continue
 			}
 
@@ -233,7 +248,8 @@ func (rs *RenderSystem) Update(entity *Entity, dt float32) {
 	}
 
 	var render *RenderComponent
-	if !entity.GetComponent(&render) {
+	var ok bool
+	if render, ok = entity.ComponentFast("*engi.RenderComponent").(*RenderComponent); !ok {
 		return
 	}
 

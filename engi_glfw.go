@@ -166,21 +166,30 @@ func RunPreparation(customGame CustomGame) {
 func runLoop(customGame CustomGame, headless bool) {
 	RunPreparation(customGame)
 
-	ticker := time.NewTicker(time.Duration(int(time.Second) / fpsLimit))
-Outer:
-	for {
-		select {
-		case <-ticker.C:
+	if fpsLimit > 0 {
+		ticker := time.NewTicker(time.Duration(int(time.Second) / fpsLimit))
+	Outer:
+		for {
+			select {
+			case <-ticker.C:
+				RunIteration()
+				if !headless && window.ShouldClose() {
+					break Outer
+				}
+			case <-resetLoopTicker:
+				ticker.Stop()
+				ticker = time.NewTicker(time.Duration(int(time.Second) / fpsLimit))
+			}
+		}
+		ticker.Stop()
+	} else {
+		for {
 			RunIteration()
 			if !headless && window.ShouldClose() {
-				break Outer
+				break
 			}
-		case <-resetLoopTicker:
-			ticker.Stop()
-			ticker = time.NewTicker(time.Duration(int(time.Second) / fpsLimit))
 		}
 	}
-	ticker.Stop()
 }
 
 func Width() float32 {

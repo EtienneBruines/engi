@@ -1,5 +1,10 @@
 package engi
 
+import (
+	"sort"
+	"strings"
+)
+
 type Systemer interface {
 	Update(entity *Entity, dt float32)
 	Type() string
@@ -19,7 +24,7 @@ type Systemer interface {
 }
 
 type System struct {
-	entities             map[string]*Entity
+	entities             []*Entity
 	messageQueue         []Message
 	ShouldSkipOnHeadless bool
 	World                *World
@@ -27,7 +32,6 @@ type System struct {
 
 func NewSystem() *System {
 	s := &System{}
-	s.entities = make(map[string]*Entity)
 	return s
 }
 
@@ -40,21 +44,28 @@ func (s System) Priority() int {
 }
 
 func (s System) Entities() []*Entity {
-	list := make([]*Entity, len(s.entities))
-	i := 0
-	for _, ent := range s.entities {
-		list[i] = ent
-		i++
-	}
-	return list
+	return s.entities
 }
 
 func (s *System) AddEntity(entity *Entity) {
-	s.entities[entity.ID()] = entity
+	indexToAdd := sort.Search(len(s.entities), func(index int) bool {
+		return strings.Compare(s.entities[index].id, entity.id) >= 0
+	})
+
+	s.entities = append(s.entities[:indexToAdd], append([]*Entity{entity}, s.entities[indexToAdd:]...)...)
 }
 
 func (s *System) RemoveEntity(entity *Entity) {
-	delete(s.entities, entity.ID())
+	index := sort.Search(len(s.entities), func(index int) bool {
+		return strings.Compare(s.entities[index].id, entity.id) >= 0
+	})
+	if index >= 0 {
+		if index == len(s.entities)-1 {
+			s.entities = s.entities[:index]
+		} else {
+			s.entities = append(s.entities[:index], s.entities[index+1:]...)
+		}
+	}
 }
 
 func (s System) SkipOnHeadless() bool {

@@ -58,8 +58,8 @@ func SetBg(color uint32) {
 }
 
 func SetFPSLimit(limit int) error {
-	if limit <= 0 {
-		return fmt.Errorf("FPS Limit out of bounds. Requires > 0")
+	if limit < 0 {
+		return fmt.Errorf("FPS Limit out of bounds. Requires >= 0")
 	}
 	fpsLimit = limit
 	resetLoopTicker <- true

@@ -5,6 +5,9 @@ import (
 	"github.com/paked/engi"
 	"log"
 	"math/rand"
+	"os"
+	"os/signal"
+	"runtime/pprof"
 	"sync"
 )
 
@@ -80,11 +83,11 @@ type SpeedSystem struct {
 func (ms *SpeedSystem) New() {
 	ms.System = engi.NewSystem()
 	engi.Mailbox.Listen("CollisionMessage", func(message engi.Message) {
-		log.Println("collision")
 		collision, isCollision := message.(engi.CollisionMessage)
 		if isCollision {
 			var speed *SpeedComponent
-			if !collision.Entity.GetComponent(&speed) {
+			var ok bool
+			if speed, ok = collision.Entity.ComponentFast("*SpeedComponent").(*SpeedComponent); !ok {
 				return
 			}
 
@@ -100,9 +103,15 @@ func (*SpeedSystem) Type() string {
 func (ms *SpeedSystem) Update(entity *engi.Entity, dt float32) {
 	var speed *SpeedComponent
 	var space *engi.SpaceComponent
-	if !entity.GetComponent(&speed) || !entity.GetComponent(&space) {
+	var ok bool
+
+	if speed, ok = entity.ComponentFast("*SpeedComponent").(*SpeedComponent); !ok {
 		return
 	}
+	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {
+		return
+	}
+
 	space.Position.X += speed.X * dt
 	space.Position.Y += speed.Y * dt
 }
@@ -132,7 +141,12 @@ func (BallSystem) Type() string {
 func (bs *BallSystem) Update(entity *engi.Entity, dt float32) {
 	var space *engi.SpaceComponent
 	var speed *SpeedComponent
-	if !entity.GetComponent(&space) || !entity.GetComponent(&speed) {
+	var ok bool
+
+	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {
+		return
+	}
+	if speed, ok = entity.ComponentFast("*SpeedComponent").(*SpeedComponent); !ok {
 		return
 	}
 
@@ -181,10 +195,15 @@ func (c *ControlSystem) Update(entity *engi.Entity, dt float32) {
 	// -Move entity based on that
 	var control *ControlComponent
 	var space *engi.SpaceComponent
+	var ok bool
 
-	if !entity.GetComponent(&space) || !entity.GetComponent(&control) {
+	if control, ok = entity.ComponentFast("*ControlComponent").(*ControlComponent); !ok {
 		return
 	}
+	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {
+		return
+	}
+
 	up := false
 	down := false
 	if control.Scheme == "WASD" {
@@ -245,11 +264,24 @@ func (sc *ScoreSystem) New() {
 	})
 }
 
+var sum float32
+
 func (c *ScoreSystem) Update(entity *engi.Entity, dt float32) {
 	var render *engi.RenderComponent
 	var space *engi.SpaceComponent
+	var ok bool
 
-	if !entity.GetComponent(&render) || !entity.GetComponent(&space) {
+	sum += dt
+
+	if sum > 1 {
+		sum = 0
+		fmt.Println(engi.Time.Fps())
+	}
+
+	if render, ok = entity.ComponentFast("*engi.RenderComponent").(*engi.RenderComponent); !ok {
+		return
+	}
+	if space, ok = entity.ComponentFast("*engi.SpaceComponent").(*engi.SpaceComponent); !ok {
 		return
 	}
 
@@ -274,6 +306,38 @@ func (ScoreMessage) Type() string {
 	return "ScoreMessage"
 }
 
+const dir = "/tmp/cpu.out"
+
 func main() {
+	if dir != "" {
+		f, err := os.Create(dir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			fmt.Sprint(sig)
+			fmt.Println("STOPPING")
+			pprof.StopCPUProfile()
+			fmt.Println("STOPPING")
+			os.Exit(0)
+		}
+	}()
+
+	defer func() {
+		for sig := range c {
+			fmt.Sprint(sig)
+			pprof.StopCPUProfile()
+			os.Exit(0)
+		}
+	}()
+
+	engi.SetFPSLimit(0)
 	engi.OpenHeadless(&PongGame{})
 }

@@ -19,20 +19,23 @@ type SpaceComponent struct {
 	Height   float32
 }
 
-func (*SpaceComponent) Type() string {
-	return "SpaceComponent"
+func (*SpaceComponent) Type() int {
+	return spaceComponentType
 }
+
+var spaceComponentType = RegisterType()
 
 func (sc SpaceComponent) AABB() AABB {
 	return AABB{Min: sc.Position, Max: Point{sc.Position.X + sc.Width, sc.Position.Y + sc.Height}}
 }
 
-type CollisionMasterComponent struct {
+type CollisionMasterComponent struct{}
+
+func (*CollisionMasterComponent) Type() int {
+	return collisonMasterComponentType
 }
 
-func (*CollisionMasterComponent) Type() string {
-	return "CollisionMasterComponent"
-}
+var collisonMasterComponentType = RegisterType()
 
 func (cm CollisionMasterComponent) Is() bool {
 	return true
@@ -43,9 +46,11 @@ type CollisionComponent struct {
 	Extra       Point
 }
 
-func (*CollisionComponent) Type() string {
-	return "CollisionComponent"
+func (*CollisionComponent) Type() int {
+	return collisonComponentType
 }
+
+var collisonComponentType = RegisterType()
 
 type CollisionMessage struct {
 	Entity *Entity

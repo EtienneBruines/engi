@@ -4,9 +4,11 @@ package engi
 // system-wide pauses.
 type UnpauseComponent struct{}
 
-func (UnpauseComponent) Type() string {
-	return "UnpauseComponent"
+func (UnpauseComponent) Type() int {
+	return unpauseComponentType
 }
+
+var unpauseComponentType = RegisterType()
 
 // PauseSystem is a Systemer that listens for Pause messages, and then pauses the entire world
 type PauseSystem struct {

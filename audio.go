@@ -18,9 +18,11 @@ type AudioComponent struct {
 	player     *Player
 }
 
-func (*AudioComponent) Type() string {
-	return "AudioComponent"
+func (*AudioComponent) Type() int {
+	return audioComponentType
 }
+
+var audioComponentType = RegisterType()
 
 // AudioSystem is a System that allows for sound effects and / or music
 type AudioSystem struct {

@@ -24,15 +24,6 @@ type Renderable interface {
 	Render(b *Batch, render *RenderComponent, space *SpaceComponent)
 }
 
-type RenderComponent struct {
-	Display      Renderable
-	Scale        Point
-	Label        string
-	priority     PriorityLevel
-	Transparency float32
-	Color        uint32
-}
-
 type renderChangeMessage struct {
 	entity      *Entity
 	oldPriority PriorityLevel
@@ -41,6 +32,15 @@ type renderChangeMessage struct {
 
 func (renderChangeMessage) Type() string {
 	return "renderChangeMessage"
+}
+
+type RenderComponent struct {
+	Display      Renderable
+	Scale        Point
+	Label        string
+	priority     PriorityLevel
+	Transparency float32
+	Color        uint32
 }
 
 func NewRenderComponent(display Renderable, scale Point, label string) *RenderComponent {
@@ -59,9 +59,11 @@ func (r *RenderComponent) SetPriority(p PriorityLevel) {
 	r.priority = p
 }
 
-func (*RenderComponent) Type() string {
-	return "RenderComponent"
+func (*RenderComponent) Type() int {
+	return renderComponentType
 }
+
+var renderComponentType = RegisterType()
 
 type RenderSystem struct {
 	renders map[PriorityLevel][]*Entity

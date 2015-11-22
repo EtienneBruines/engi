@@ -5,7 +5,7 @@
 package engi
 
 type Component interface {
-	Type() string
+	Type() int
 }
 
 type Systemer interface {
@@ -67,4 +67,12 @@ func (s System) SkipOnHeadless() bool {
 
 func (s *System) SetWorld(w *World) {
 	s.World = w
+}
+
+var counter = 0
+
+// RegisterType returns a unique number, which you can use to reference to your Component/System
+func RegisterType() int {
+	counter++
+	return counter
 }

@@ -5,6 +5,7 @@
 package engi
 
 import (
+	"runtime"
 	"testing"
 )
 
@@ -55,6 +56,7 @@ func Bench(b *testing.B, preload func(), setup func(w *World)) {
 
 	OpenHeadlessNoRun()
 	RunPreparation(g)
+	runtime.GC()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		RunIteration()

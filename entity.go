@@ -2,21 +2,19 @@ package engi
 
 import (
 	"reflect"
-	"strings"
 )
 
 type Entity struct {
 	id         string
-	components map[string]Component
+	components []Component
 	requires   map[string]bool
 	Pattern    string
 }
 
 func NewEntity(requires []string) *Entity {
 	e := &Entity{
-		id:         generateUUID(),
-		requires:   make(map[string]bool),
-		components: make(map[string]Component),
+		id:       generateUUID(),
+		requires: make(map[string]bool),
 	}
 	for _, req := range requires {
 		e.requires[req] = true
@@ -29,24 +27,23 @@ func (e *Entity) DoesRequire(name string) bool {
 }
 
 func (e *Entity) AddComponent(component Component) {
-	e.components[component.Type()] = component
+	e.components = append(e.components, component)
 }
 
 func (e *Entity) RemoveComponent(component Component) {
-	delete(e.components, component.Type())
+	for index := range e.components {
+		if e.components[index].Type() == component.Type() {
+			e.components = append(e.components[:index], e.components[index+1:]...)
+		}
+	}
 }
 
 // GetComponent takes a double pointer to a Component,
 // and populates it with the value of the right type.
 func (e *Entity) Component(x interface{}) bool {
 	v := reflect.ValueOf(x).Elem() // *T
-	typeName := v.Type().String()
-	dotIndex := strings.Index(typeName, ".")
-	if dotIndex > 0 {
-		typeName = typeName[dotIndex+1:]
-	}
-	c, ok := e.components[typeName]
-	if !ok {
+	c := e.ComponentFast((v.Interface().(Component)))
+	if c == nil {
 		return false
 	}
 	v.Set(reflect.ValueOf(c))
@@ -57,7 +54,12 @@ func (e *Entity) Component(x interface{}) bool {
 // but without using reflect (and thus faster)
 // Be sure to define the .Type() such that it takes a pointer receiver
 func (e *Entity) ComponentFast(c Component) interface{} {
-	return e.components[c.Type()]
+	for _, comp := range e.components {
+		if comp.Type() == c.Type() {
+			return comp
+		}
+	}
+	return nil
 }
 
 func (e *Entity) ID() string {

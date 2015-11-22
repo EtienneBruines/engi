@@ -55,9 +55,11 @@ func (ac *AnimationComponent) Cell() Renderable {
 	return ac.Renderables[idx]
 }
 
-func (*AnimationComponent) Type() string {
-	return "AnimationComponent"
+func (*AnimationComponent) Type() int {
+	return animationComponentType
 }
+
+var animationComponentType = RegisterType()
 
 type AnimationSystem struct {
 	*System

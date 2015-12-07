@@ -1,28 +1,26 @@
-// Copyright 2014 Joseph Hager. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
 package engi
 
 import (
-	"github.com/golang/freetype/truetype"
-	"github.com/paked/webgl"
 	"image/color"
 	"io/ioutil"
 	"log"
 	"math"
 	"os"
 	"path"
+
+	"github.com/golang/freetype/truetype"
+	"github.com/paked/webgl"
 )
 
-type Resource struct {
+type resource struct {
 	kind string
 	name string
 	url  string
 }
 
-type Loader struct {
-	resources []Resource
+// loader allows for preloading of resources
+type loader struct {
+	resources []resource
 	images    map[string]*Texture
 	jsons     map[string]string
 	levels    map[string]*Level
@@ -30,9 +28,10 @@ type Loader struct {
 	fonts     map[string]*truetype.Font
 }
 
-func NewLoader() *Loader {
-	return &Loader{
-		resources: make([]Resource, 1),
+// newLoader returns a newly created loader
+func newLoader() *loader {
+	return &loader{
+		resources: make([]resource, 1),
 		images:    make(map[string]*Texture),
 		jsons:     make(map[string]string),
 		levels:    make(map[string]*Level),
@@ -41,14 +40,16 @@ func NewLoader() *Loader {
 	}
 }
 
-func NewResource(url string) Resource {
+// newResource returns a new resource from given url
+func newResource(url string) resource {
 	kind := path.Ext(url)
 	//name := strings.TrimSuffix(path.Base(url), kind)
 	name := path.Base(url)
-	return Resource{name: name, url: url, kind: kind[1:]}
+	return resource{name: name, url: url, kind: kind[1:]}
 }
 
-func (l *Loader) AddFromDir(url string, recurse bool) {
+// AddFromDir adds resources from all files from the given directory
+func (l *loader) AddFromDir(url string, recurse bool) {
 	files, err := ioutil.ReadDir(url)
 	if err != nil {
 		log.Fatal(err)
@@ -63,27 +64,32 @@ func (l *Loader) AddFromDir(url string, recurse bool) {
 	}
 }
 
-func (l *Loader) Add(urls ...string) {
+// Add adds the resources created from the URLs given.
+func (l *loader) Add(urls ...string) {
 	for _, u := range urls {
-		r := NewResource(u)
+		r := newResource(u)
 		l.resources = append(l.resources, r)
 		log.Println(r)
 	}
 }
 
-func (l *Loader) Image(name string) *Texture {
+// Image returns the preloaded Image with given name
+func (l *loader) Image(name string) *Texture {
 	return l.images[name]
 }
 
-func (l *Loader) Json(name string) string {
+// JSON returns the preloaded JSON object with given name
+func (l *loader) JSON(name string) string {
 	return l.jsons[name]
 }
 
-func (l *Loader) Level(name string) *Level {
+// Level returns the preloaded level object with given name
+func (l *loader) Level(name string) *Level {
 	return l.levels[name]
 }
 
-func (l *Loader) Sound(name string) ReadSeekCloser {
+// Sound returns the preloaded audio file with given name
+func (l *loader) Sound(name string) ReadSeekCloser {
 	f, err := os.Open(l.sounds[name])
 	if err != nil {
 		return nil
@@ -91,14 +97,12 @@ func (l *Loader) Sound(name string) ReadSeekCloser {
 	return f
 }
 
-func (l *Loader) Load(onFinish func()) {
+// Load allows the `loader` to actually preload its `resource`s
+func (l *loader) Load(onFinish func()) {
 	for _, r := range l.resources {
 		switch r.kind {
 		case "png":
-			data, err := loadImage(r)
-			if err == nil {
-				l.images[r.name] = NewTexture(data)
-			}
+			fallthrough
 		case "jpg":
 			data, err := loadImage(r)
 			if err == nil {
@@ -159,7 +163,12 @@ type Region struct {
 }
 
 func (r *Region) Render(b *Batch, render *RenderComponent, space *SpaceComponent) {
-	b.Draw(r, space.Position.X, space.Position.Y, 0, 0, render.Scale.X, render.Scale.Y, 0, render.Color, render.Transparency)
+	b.Draw(r,
+		space.Position.X, space.Position.Y,
+		0, 0,
+		render.Scale.X, render.Scale.Y,
+		0,
+		render.Color, render.Transparency)
 }
 
 func NewRegion(texture *Texture, x, y, w, h int) *Region {

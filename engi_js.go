@@ -162,10 +162,6 @@ func animate(dt float32) {
 	keysUpdate()
 }
 
-func exit() {
-	responder.Close()
-}
-
 func toPx(n int) string {
 	return strconv.FormatInt(int64(n), 10) + "px"
 }
@@ -210,7 +206,7 @@ func CancelAnimationFrame(id int) {
 	js.Global.Call("cancelAnimationFrame")
 }
 
-func loadImage(r Resource) (Image, error) {
+func loadImage(r resource) (Image, error) {
 	ch := make(chan error, 1)
 
 	img := js.Global.Get("Image").New()
@@ -230,7 +226,7 @@ func loadImage(r Resource) (Image, error) {
 	return &ImageObject{img}, nil
 }
 
-func loadJson(r Resource) (string, error) {
+func loadJson(r resource) (string, error) {
 	ch := make(chan error, 1)
 
 	req := js.Global.Get("XMLHttpRequest").New()

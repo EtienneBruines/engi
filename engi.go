@@ -12,7 +12,7 @@ import (
 
 var (
 	Time        *Clock
-	Files       *Loader
+	Files       *loader
 	Gl          *webgl.Context
 	Mailbox     MessageManager
 	cam         *cameraSystem
@@ -27,7 +27,7 @@ var (
 func Open(title string, width, height int, fullscreen bool, r CustomGame) {
 	keyStates = make(map[Key]bool)
 	Time = NewClock()
-	Files = NewLoader()
+	Files = newLoader()
 
 	run(r, title, width, height, fullscreen)
 }
@@ -35,7 +35,7 @@ func Open(title string, width, height int, fullscreen bool, r CustomGame) {
 func OpenHeadless(r CustomGame) {
 	keyStates = make(map[Key]bool)
 	Time = NewClock()
-	Files = NewLoader() // TODO: do we want files in Headless mode?
+	Files = newLoader() // TODO: do we want files in Headless mode?
 
 	headless = true
 
@@ -44,7 +44,7 @@ func OpenHeadless(r CustomGame) {
 
 func OpenHeadlessNoRun() {
 	Time = NewClock()
-	Files = NewLoader() // TODO: do we want files in Headless mode?
+	Files = newLoader() // TODO: do we want files in Headless mode?
 
 	headless = true
 }

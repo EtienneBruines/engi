@@ -361,7 +361,7 @@ func (i *ImageObject) Height() int {
 	return i.data.Rect.Max.Y
 }
 
-func loadImage(r Resource) (Image, error) {
+func loadImage(r resource) (Image, error) {
 	file, err := os.Open(r.url)
 	if err != nil {
 		return nil, err
@@ -379,7 +379,7 @@ func loadImage(r Resource) (Image, error) {
 	return &ImageObject{newm}, nil
 }
 
-func loadJson(r Resource) (string, error) {
+func loadJson(r resource) (string, error) {
 	file, err := ioutil.ReadFile(r.url)
 	if err != nil {
 		return "", err
@@ -387,7 +387,7 @@ func loadJson(r Resource) (string, error) {
 	return string(file), nil
 }
 
-func loadFont(r Resource) (*truetype.Font, error) {
+func loadFont(r resource) (*truetype.Font, error) {
 	ttfBytes, err := ioutil.ReadFile(r.url)
 	if err != nil {
 		return nil, err

@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"math/rand"
 	"sync"
-	"image/color"
 
 	"github.com/paked/engi"
 	"github.com/paked/engi/ecs"

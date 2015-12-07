@@ -83,7 +83,7 @@ func (t ByFirstgid) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
 func (t ByFirstgid) Less(i, j int) bool { return t[i].Firstgid < t[j].Firstgid }
 
 // MUST BE base64 ENCODED and COMPRESSED WITH zlib!
-func createLevelFromTmx(r Resource) (*Level, error) {
+func createLevelFromTmx(r resource) (*Level, error) {
 	tlvl := &TMXLevel{}
 	lvl := &Level{}
 

@@ -209,6 +209,16 @@ func GameHeight() float32 {
 	return gameHeight
 }
 
+// SetGameWidth sets the width of the game area. Note it will be set automatically when you load the screen
+func SetGameWidth(w float32) {
+	gameWidth = w
+}
+
+// SetGameHeight sets the height of the game area. Note it will be set automatically when you load the screen
+func SetGameHeight(h float32) {
+	gameHeight = h
+}
+
 func closeEvent() {
 	for _, scenes := range scenes {
 		if exiter, ok := scenes.scene.(Exiter); ok {

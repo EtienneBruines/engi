@@ -937,8 +937,12 @@ func (l *textShader) Pre() {
 func (l *textShader) updateBuffer(ren *RenderComponent, space *SpaceComponent) {
 	txt, ok := ren.Drawable.(Text)
 	if !ok {
-		unsupportedType(ren.Drawable)
-		return
+		t, ok := ren.Drawable.(*Text)
+		if !ok {
+			unsupportedType(ren.Drawable)
+			return
+		}
+		txt = *t
 	}
 
 	if len(ren.bufferContent) < 20*len(txt.Text) {
@@ -961,8 +965,12 @@ func (l *textShader) generateBufferContent(ren *RenderComponent, space *SpaceCom
 	tint := colorToFloat32(ren.Color)
 	txt, ok := ren.Drawable.(Text)
 	if !ok {
-		unsupportedType(ren.Drawable)
-		return false
+		t, ok := ren.Drawable.(*Text)
+		if !ok {
+			unsupportedType(ren.Drawable)
+			return false
+		}
+		txt = *t
 	}
 
 	atlas, ok := atlasCache[*txt.Font]
@@ -1039,9 +1047,18 @@ func (l *textShader) Draw(ren *RenderComponent, space *SpaceComponent) {
 		l.lastBuffer = ren.buffer
 	}
 
-	txt, ok := ren.Drawable.(Text)
+	var (
+		txt Text
+		ok  bool
+	)
+	txt, ok = ren.Drawable.(Text)
 	if !ok {
-		unsupportedType(ren.Drawable)
+		t, ok := ren.Drawable.(*Text)
+		if !ok {
+			unsupportedType(ren.Drawable)
+		}
+
+		txt = *t
 	}
 
 	atlas, ok := atlasCache[*txt.Font]
